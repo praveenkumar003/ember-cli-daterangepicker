@@ -268,7 +268,7 @@ export default Ember.Component.extend({
     },
 
     _setupPicker() {
-        this.$('.daterangepicker-input').daterangepicker(this.getOptions());
+        $('.daterangepicker-input').daterangepicker(this.getOptions());
         if(isPresent(this.datePickerDropDownId)){
             $('.daterangepicker').each((i,e)=>{
                 let elem=$(e);
@@ -281,15 +281,15 @@ export default Ember.Component.extend({
     },
 
     attachPickerEvents() {
-        this.$('.daterangepicker-input').on('apply.daterangepicker', (ev, picker) => {
+        $('.daterangepicker-input').on('apply.daterangepicker', (ev, picker) => {
             this.handleDateRangePickerEvent('applyAction', picker);
         });
 
-        this.$('.daterangepicker-input').on('hide.daterangepicker', (ev, picker) => {
+        $('.daterangepicker-input').on('hide.daterangepicker', (ev, picker) => {
             this.handleDateRangePickerEvent('hideAction', picker);
         });
 
-        this.$('.daterangepicker-input').on('cancel.daterangepicker', () => {
+        $('.daterangepicker-input').on('cancel.daterangepicker', () => {
             this.handleDateRangePickerEvent('cancelAction', undefined, true);
         });
     },
