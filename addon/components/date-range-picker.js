@@ -1,17 +1,14 @@
-import Ember from 'ember';
+import Component from '@ember/component';
 import moment from 'moment';
 import layout from '../templates/components/date-range-picker';
-
-const {
-    run,
-    isEmpty,
-    computed,
-    isPresent
-} = Ember;
+import { computed } from '@ember/object';
+import { isPresent, isEmpty } from '@ember/utils';
+import { run,cancel,scheduleOnce } from '@ember/runloop';
+import { assert } from '@ember/debug';
 
 const noop = function() {};
 
-export default Ember.Component.extend({
+export default Component.extend({
     layout,
     // classNames: ['form-group'],
     attributeBindings: ['start', 'end', 'serverFormat'],
@@ -30,14 +27,30 @@ export default Ember.Component.extend({
     parentEl: 'body',
     format: 'MMM D, YYYY',
     serverFormat: 'YYYY-MM-DD',
+    format24WithSeconds: 'MMM D, YYYY, HH:mm:ss',
+    format24WithoutSeconds:'MMM D, YYYY, HH:mm',
+    format12WithSeconds:'MMM D, YYYY, hh:mm:ss A',
+    format12WithoutSeconds:'MMM D, YYYY, hh:mm A',
     rangeText: computed('start', 'end', 'chosenLabel', function() {
         let format = this.get('format');
         let serverFormat = this.get('serverFormat');
         let start = this.get('start');
         let end = this.get('end');
         let chosenLabel = this.get('chosenLabel');
+        let timePicker=this.get('timePicker');
+        if(timePicker)
+        {
+            // format='MMM D, YYYY (HH:mm:ss)';
+            if(this.get('timePicker24Hour'))
+            {
+                format = this.get('timePickerSeconds') ? this.get('format24WithSeconds'):this.get('format24WithoutSeconds') ; 
+            }
+            else{
+                format = this.get('timePickerSeconds') ? this.get('format12WithSeconds'):this.get('format12WithoutSeconds') ;
+            }
+        }
         //TODO need to check with dateRanges in o365attributes for corresponding id for custom range.
-        if (this.get('singleDatePicker') === false && Ember.isPresent(chosenLabel) && chosenLabel === 'Custom Range') {
+        if (this.get('singleDatePicker') === false && isPresent(chosenLabel) && chosenLabel === 'Custom Range') {
             if (!isEmpty(start) && !isEmpty(end)) {
                 if(moment.isMoment(start) && start._f === this.serverFormat){
                     return start.format(format) + this.get('separator') + end.format(format);
@@ -59,7 +72,7 @@ export default Ember.Component.extend({
                 return moment(start, serverFormat).format(format) + this.get('separator') + moment(end, serverFormat).format(format);
             }
         }
-        if (this.get('singleDatePicker') && Ember.isPresent(start)) {
+        if (this.get('singleDatePicker') && isPresent(start)) {
             if(moment.isMoment(start) && start._f === this.serverFormat){
                 return start.format(format);
             }
@@ -140,7 +153,7 @@ export default Ember.Component.extend({
             for (var range in ranges) {
                 if (range !== "All Time") {
                     if (this.get('timePicker')) {
-                        if (start.isSame(ranges[range][0]) && end.isSame(ranges[range][1])) {
+                        if (start.format(this.serverFormat) == this.ranges[range][0].format(this.serverFormat) && end.format(this.serverFormat) == this.ranges[range][1].format(this.serverFormat)) {
                             customRange = false;
                             // this.chosenLabel = this.container.find('.ranges li:eq(' + i + ')').addClass('active').html();
                             this.set('chosenLabel', range);
@@ -179,7 +192,6 @@ export default Ember.Component.extend({
 
     didUpdateAttrs() {
         this._super(...arguments);
-        // console.log(' didUpdateAttrs in date-range-picker');
         this.setupPicker();
     },
 
@@ -187,7 +199,7 @@ export default Ember.Component.extend({
     willDestroy() {
         this._super(...arguments);
 
-        run.cancel(this._setupTimer);
+        cancel(this._setupTimer);
 
         if (this.get('removeDropdownOnDestroy')) {
             if(isPresent(this.datePickerDropDownId))
@@ -263,8 +275,8 @@ export default Ember.Component.extend({
     },
 
     setupPicker() {
-        run.cancel(this._setupTimer);
-        this._setupTimer = run.scheduleOnce('afterRender', this, this._setupPicker);
+        cancel(this._setupTimer);
+        this._setupTimer = scheduleOnce('afterRender', this, this._setupPicker);
     },
 
     _setupPicker() {
@@ -304,14 +316,13 @@ export default Ember.Component.extend({
             start = picker.startDate.format(this.get('serverFormat'));
             end = picker.endDate.format(this.get('serverFormat'));
             chosenLabel = picker.chosenLabel;
-            //console.log('daterangepicker start ', start, ' end ', end, ' picker.startDate ', picker.startDate, ' picker.endDate', picker.endDate);
             this.set('start', picker.startDate);
             this.set('end', picker.endDate);
             this.set('chosenLabel', chosenLabel);
         }
 
         if (action) {
-            Ember.assert(
+            assert(
                 `${actionName} for date-range-picker must be a function`,
                 typeof action === 'function'
             );
